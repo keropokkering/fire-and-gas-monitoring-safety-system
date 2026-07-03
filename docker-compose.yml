@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # 1. MQTT Broker (mosquitto) with WebSockets configured on port 9001
+  mqtt:
+    image: eclipse-mosquitto:latest
+    container_name: fgs_mqtt_broker
+    ports:
+      - "1883:1883"  # Standard MQTT TCP
+      - "9001:9001"  # MQTT over WebSockets
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mqtt_data:/mosquitto/data
+      - mqtt_log:/mosquitto/log
+    restart: unless-stopped
+
+  # 2. Node-RED Gateway (polls Modbus TCP and publishes telemetry to MQTT)
+  nodered:
+    build:
+      context: .
+      dockerfile: Dockerfile.nodered
+    container_name: fgs_nodered_gateway
+    ports:
+      - "1880:1880"  # Node-RED Admin Panel UI
+    volumes:
+      - nodered_data:/data
+      - ./node_red_flow.json:/data/flows.json:ro
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+
+  # 3. Web Dashboard (serves safety monitoring dashboard via Nginx alpine)
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fgs_dashboard
+    ports:
+      - "8080:80"  # Serves Dashboard at http://localhost:8080
+    restart: unless-stopped
+
+volumes:
+  mqtt_data:
+  mqtt_log:
+  nodered_data:

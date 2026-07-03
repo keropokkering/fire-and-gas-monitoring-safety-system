@@ -1,0 +1,297 @@
+[
+  {
+    "id": "fgs_flow_tab",
+    "type": "tab",
+    "label": "Fire & Gas Modbus Gateway",
+    "disabled": false,
+    "info": "This flow connects to a Modbus TCP PLC (simulator or hardware), maps registers/coils to JSON telemetry, publishes it to an MQTT Broker, and routes commands back to the PLC."
+  },
+  {
+    "id": "modbus_tcp_client",
+    "type": "modbus-client",
+    "name": "PLC_Modbus_TCP",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureQueueEnabled": true,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "keepAlive": true,
+    "reconnectTimeout": "2000",
+    "connectionDelay": "100",
+    "maxRetriesPerNode": "5",
+    "unit_id": "1",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "showWarnings": true,
+    "reconnectOnTimeout": true,
+    "autoConnect": true
+  },
+  {
+    "id": "mqtt_cloud_broker",
+    "type": "mqtt-broker",
+    "name": "EMQX Public Broker",
+    "broker": "broker.emqx.io",
+    "port": "1883",
+    "clientid": "node_red_fgs_gateway",
+    "autoConnect": true,
+    "usetls": false,
+    "compatmode": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "industrial/fire_gas/gateway/status",
+    "birthQos": "0",
+    "birthPayload": "online",
+    "closeTopic": "industrial/fire_gas/gateway/status",
+    "closeQos": "0",
+    "closePayload": "offline",
+    "willTopic": "industrial/fire_gas/gateway/status",
+    "willQos": "0",
+    "willPayload": "offline"
+  },
+  {
+    "id": "poll_modbus_registers",
+    "type": "modbus-read",
+    "z": "fgs_flow_tab",
+    "name": "Read HR 40001-40007 (Telemetry)",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "HoldingRegister",
+    "adr": "0",
+    "quantity": "7",
+    "rate": "1",
+    "rateUnit": "s",
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "server": "modbus_tcp_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyQueue": false,
+    "x": 190,
+    "y": 140,
+    "wires": [
+      [
+        "map_registers_func"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "poll_modbus_inputs",
+    "type": "modbus-read",
+    "z": "fgs_flow_tab",
+    "name": "Read Inputs 10001-10003 (MCPs)",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "InputStatus",
+    "adr": "0",
+    "quantity": "3",
+    "rate": "1",
+    "rateUnit": "s",
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "server": "modbus_tcp_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyQueue": false,
+    "x": 190,
+    "y": 220,
+    "wires": [
+      [
+        "store_mcp_func"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "poll_modbus_coils",
+    "type": "modbus-read",
+    "z": "fgs_flow_tab",
+    "name": "Read Coils 00001-00003 (Bells)",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "Coil",
+    "adr": "0",
+    "quantity": "3",
+    "rate": "1",
+    "rateUnit": "s",
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "server": "modbus_tcp_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyQueue": false,
+    "x": 180,
+    "y": 300,
+    "wires": [
+      [
+        "store_bells_func"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "store_mcp_func",
+    "type": "function",
+    "z": "fgs_flow_tab",
+    "name": "Store MCP States",
+    "func": "const mcps = msg.payload;\nflow.set('mcp_states', {\n    zone1: mcps[0] === 1 || mcps[0] === true,\n    zone2: mcps[1] === 1 || mcps[1] === true,\n    zone3: mcps[2] === 1 || mcps[2] === true\n});\nreturn null; // do not output immediately",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 470,
+    "y": 220,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "store_bells_func",
+    "type": "function",
+    "z": "fgs_flow_tab",
+    "name": "Store Bell States",
+    "func": "const bells = msg.payload;\nflow.set('bell_states', {\n    zone1: bells[0] === 1 || bells[0] === true,\n    zone2: bells[1] === 1 || bells[1] === true,\n    zone3: bells[2] === 1 || bells[2] === true\n});\nreturn null; // do not output immediately",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 470,
+    "y": 300,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "map_registers_func",
+    "type": "function",
+    "z": "fgs_flow_tab",
+    "name": "Format Telemetry JSON",
+    "func": "const registers = msg.payload; // raw array from modbus\n\n// Get stored MCP and Bell state inputs from context (default false if not polled yet)\nconst mcps = flow.get('mcp_states') || { zone1: false, zone2: false, zone3: false };\nconst bells = flow.get('bell_states') || { zone1: false, zone2: false, zone3: false };\n\n// Map Modbus Registers (Scaling values to match engineering units)\n// HR 40001 (reg[0]) = Zone 1 Smoke level (0-5.00% scaled x100 in PLC, e.g., 125 -> 1.25)\n// HR 40002 (reg[1]) = Zone 1 Temperature (0-120°C scaled x10 in PLC, e.g., 224 -> 22.4)\nconst z1_smoke = (registers[0] || 0) / 100;\nconst z1_temp = (registers[1] || 0) / 10;\n\n// HR 40003 (reg[2]) = Zone 2 Smoke\n// HR 40004 (reg[3]) = Zone 2 Temperature\nconst z2_smoke = (registers[2] || 0) / 100;\nconst z2_temp = (registers[3] || 0) / 10;\n\n// HR 40005 (reg[4]) = Zone 3 Smoke\n// HR 40006 (reg[5]) = Zone 3 Temperature\n// HR 40007 (reg[6]) = Zone 3 Gas Concentration (Direct PPM reading, e.g., 15)\nconst z3_smoke = (registers[4] || 0) / 100;\nconst z3_temp = (registers[5] || 0) / 10;\nconst z3_gas = registers[6] || 0;\n\n// Structure complete payload matching FGS-PRO Dashboard layout\nmsg.payload = {\n    timestamp: Date.now(),\n    zones: {\n        zone1_server_room: {\n            smoke_level: z1_smoke,\n            temperature: z1_temp,\n            manual_call_point: mcps.zone1,\n            alarm_bell: bells.zone1\n        },\n        zone2_production: {\n            smoke_level: z2_smoke,\n            temperature: z2_temp,\n            manual_call_point: mcps.zone2,\n            alarm_bell: bells.zone2\n        },\n        zone3_battery_room: {\n            smoke_level: z3_smoke,\n            temperature: z3_temp,\n            gas_level: z3_gas,\n            manual_call_point: mcps.zone3,\n            alarm_bell: bells.zone3\n        }\n    }\n};\n\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 490,
+    "y": 140,
+    "wires": [
+      [
+        "mqtt_out_telemetry"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_out_telemetry",
+    "type": "mqtt-out",
+    "z": "fgs_flow_tab",
+    "name": "Publish Telemetry Topic",
+    "topic": "industrial/fire_gas/telemetry",
+    "qos": "1",
+    "retain": "true",
+    "respTopic": "",
+    "contentType": "application/json",
+    "userProperties": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_cloud_broker",
+    "x": 770,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "mqtt_in_commands",
+    "type": "mqtt-in",
+    "z": "fgs_flow_tab",
+    "name": "Subscribe Command Topic",
+    "topic": "industrial/fire_gas/commands",
+    "qos": "1",
+    "datatype": "json",
+    "broker": "mqtt_cloud_broker",
+    "x": 190,
+    "y": 420,
+    "wires": [
+      [
+        "parse_command_routing"
+      ]
+    ]
+  },
+  {
+    "id": "parse_command_routing",
+    "type": "function",
+    "z": "fgs_flow_tab",
+    "name": "Parse Commands",
+    "func": "const cmd = msg.payload.command;\n\n// We will output to multiple pins based on command:\n// Pin 1: Acknowledge Coil (Write to Coil 00010)\n// Pin 2: Reset System Coil (Write to Coil 00011)\n\nif (cmd === \"ACKNOWLEDGE\") {\n    return [ { payload: true }, null ];\n} else if (cmd === \"RESET\") {\n    return [ null, { payload: true } ];\n}\n\nreturn null;",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 470,
+    "y": 420,
+    "wires": [
+      [
+        "modbus_write_ack"
+      ],
+      [
+        "modbus_write_reset"
+      ]
+    ]
+  },
+  {
+    "id": "modbus_write_ack",
+    "type": "modbus-write",
+    "z": "fgs_flow_tab",
+    "name": "Write Coil 00010 (ACK)",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "Coil",
+    "adr": "9",
+    "quantity": "1",
+    "server": "modbus_tcp_client",
+    "emptyQueue": false,
+    "x": 750,
+    "y": 380,
+    "wires": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": "modbus_write_reset",
+    "type": "modbus-write",
+    "z": "fgs_flow_tab",
+    "name": "Write Coil 00011 (RESET)",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "Coil",
+    "adr": "10",
+    "quantity": "1",
+    "server": "modbus_tcp_client",
+    "emptyQueue": false,
+    "x": 760,
+    "y": 460,
+    "wires": [
+      [],
+      []
+    ]
+  }
+]

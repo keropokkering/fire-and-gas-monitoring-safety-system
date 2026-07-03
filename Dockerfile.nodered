@@ -1,0 +1,4 @@
+FROM nodered/node-red:latest
+
+# Install Modbus TCP nodes package
+RUN npm install node-red-contrib-modbus

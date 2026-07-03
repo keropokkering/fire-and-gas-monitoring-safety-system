@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial Fire & Gas Monitoring Safety Center</title>
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Auth Module: must load first to guard access -->
+    <script src="auth.js"></script>
+    <!-- Auth Guard: redirect to login if not authenticated -->
+    <script>FGSAuth.requireAuth();</script>
+    <!-- Google Fonts: Outfit & Space Grotesk for industrial high-tech look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- MQTT.js CDN -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Background Grid Effect -->
+    <div class="grid-background"></div>
+    
+    <!-- Main App Layout Wrapper -->
+    <div class="app-layout">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="pulse-ring red"></div>
+                <div class="logo-text">
+                    <h1>FGS-PRO 3000</h1>
+                    <span>SAFETY HUB</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <button class="nav-item active" data-page="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Safety Dashboard</span>
+                </button>
+                <button class="nav-item" data-page="registry">
+                    <i data-lucide="table-properties"></i>
+                    <span>Modbus Registry</span>
+                </button>
+                <button class="nav-item" data-page="analytics">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>Safety Analytics</span>
+                </button>
+
+                <div class="sidebar-section-label">Site Levels</div>
+                <button class="nav-item nav-level" data-page="level5">
+                    <i data-lucide="layers"></i>
+                    <span>Level 5</span>
+                </button>
+                <button class="nav-item nav-level" data-page="rooftop">
+                    <i data-lucide="cloud"></i>
+                    <span>Rooftop</span>
+                </button>
+                <button class="nav-item nav-level" data-page="level3">
+                    <i data-lucide="layers"></i>
+                    <span>Level 3</span>
+                </button>
+                <button class="nav-item nav-level" data-page="level4">
+                    <i data-lucide="layers"></i>
+                    <span>Level 4</span>
+                </button>
+                <button class="nav-item nav-level" data-page="level1">
+                    <i data-lucide="layers"></i>
+                    <span>Level 1</span>
+                </button>
+                <button class="nav-item nav-level" data-page="level2">
+                    <i data-lucide="layers"></i>
+                    <span>Level 2</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-watchdog" id="sidebar-watchdog-container">
+                    <div class="watchdog-pulse-container">
+                        <i data-lucide="heart" class="watchdog-heart pulsing" id="watchdog-heart"></i>
+                    </div>
+                    <div class="watchdog-info">
+                        <span class="watchdog-label">PLC WATCHDOG</span>
+                        <span class="watchdog-status" id="watchdog-status">OK (250ms)</span>
+                    </div>
+                </div>
+                <div class="sidebar-health-summary">
+                    <span class="status-dot green" id="sidebar-health-dot"></span>
+                    <span id="sidebar-health-text">HEALTH: SECURE</span>
+                </div>
+                <span class="sidebar-ver">V2.4.1</span>
+            </div>
+        </aside>
+        
+        <!-- Right Main Panel Content -->
+        <div class="main-panel">
+            
+            <!-- Global Top Header -->
+            <header class="dashboard-header">
+                <div class="header-title-container">
+                    <h2 id="current-page-title">SAFETY CONTROL CENTER</h2>
+                    <span class="header-subtitle">LIVE OPERATIONS & PLC MONITORS</span>
+                </div>
+                
+                <div class="header-status-bar">
+                    <div class="status-badge" id="system-health-badge">
+                        <i data-lucide="shield-check" class="status-icon"></i>
+                        <span id="system-health-text">SYSTEM HEALTH: SECURE</span>
+                    </div>
+                    
+                    <div class="status-badge disconnect" id="mqtt-status-badge">
+                        <i data-lucide="wifi-off" class="status-icon" id="mqtt-status-icon"></i>
+                        <span id="mqtt-status-text">MQTT: DISCONNECTED</span>
+                    </div>
+                    
+                    <button id="audio-mute-btn" class="header-action-btn" title="Mute/Unmute Alarm Sound">
+                        <i data-lucide="volume-2" id="mute-icon"></i>
+                    </button>
+    
+                    <!-- Logged-in Operator Badge -->
+                    <div class="user-badge" id="user-badge">
+                        <i data-lucide="user-check" class="status-icon"></i>
+                        <div class="user-badge-info">
+                            <span class="user-badge-name" id="user-badge-name">OPERATOR</span>
+                            <span class="user-badge-role" id="user-badge-role">ROLE</span>
+                        </div>
+                    </div>
+    
+                    <!-- Logout Button -->
+                    <button id="logout-btn" class="header-action-btn logout-btn" title="Logout from System">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page 1: Safety Dashboard Page -->
+            <div id="page-dashboard" class="page-view active">
+                <main class="dashboard-grid">
+                    
+                    <!-- LEFT PANEL: Controls (MQTT + Simulation) -->
+                    <section class="grid-panel panel-left">
+                        <div class="panel-header">
+                            <i data-lucide="sliders"></i>
+                            <h2>System Control</h2>
+                        </div>
+                        
+                        <!-- Toggle between Simulation & Live MQTT -->
+                        <div class="control-mode-selector">
+                            <button id="mode-sim-btn" class="mode-btn active">Simulation Mode</button>
+                            <button id="mode-mqtt-btn" class="mode-btn">Live MQTT Mode</button>
+                        </div>
+        
+                        <!-- MQTT Settings Configuration -->
+                        <div id="mqtt-config-section" class="panel-section hidden">
+                            <h3><i data-lucide="settings"></i> MQTT Broker Connection</h3>
+                            <div class="form-group">
+                                <label for="mqtt-name">Name</label>
+                                <input type="text" id="mqtt-name" value="EMQX Public Broker" placeholder="Name this connection">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group two-third">
+                                    <label>Host</label>
+                                    <div class="input-with-select">
+                                        <select id="mqtt-protocol">
+                                            <option value="mqtt://">mqtt://</option>
+                                            <option value="mqtts://">mqtts://</option>
+                                            <option value="ws://">ws://</option>
+                                            <option value="wss://">wss://</option>
+                                        </select>
+                                        <input type="text" id="mqtt-host" value="broker.emqx.io" placeholder="broker.emqx.io">
+                                    </div>
+                                </div>
+                                <div class="form-group one-third">
+                                    <label for="mqtt-port">Port</label>
+                                    <input type="number" id="mqtt-port" value="1883" placeholder="1883">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="mqtt-client-id">Client ID</label>
+                                <div class="input-with-action">
+                                    <input type="text" id="mqtt-client-id" placeholder="Generating Client ID...">
+                                    <button type="button" id="mqtt-regenerate-id-btn" title="Regenerate Client ID">
+                                        <i data-lucide="refresh-cw"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-row align-center">
+                                <div class="ssl-tls-toggle">
+                                    <label class="switch">
+                                        <input type="checkbox" id="mqtt-ssl-toggle">
+                                        <span class="slider round"></span>
+                                    </label>
+                                    <span class="label-text">SSL/TLS (wss://)</span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label for="mqtt-username">Username (Opt)</label>
+                                    <input type="text" id="mqtt-username" placeholder="Optional">
+                                </div>
+                                <div class="form-group half">
+                                    <label for="mqtt-password">Password (Opt)</label>
+                                    <input type="password" id="mqtt-password" placeholder="Optional">
+                                </div>
+                            </div>
+                            <!-- Multi-Topic Subscribe Manager -->
+                            <div class="form-group">
+                                <div class="topic-manager-header">
+                                    <label>Subscribe Topics</label>
+                                    <button type="button" id="add-topic-btn" class="add-topic-btn" title="Add new topic">
+                                        <i data-lucide="plus"></i> Add Topic
+                                    </button>
+                                </div>
+                                <div id="sub-topic-list" class="sub-topic-list">
+                                    <!-- Default Topic Row 1 -->
+                                    <div class="topic-row" data-topic-index="0">
+                                        <div class="topic-row-inputs">
+                                            <input type="text" class="topic-input" value="industrial/fire_gas/telemetry" placeholder="e.g. sensor/zone1/data">
+                                            <select class="topic-qos" title="QoS Level">
+                                                <option value="0">QoS 0</option>
+                                                <option value="1" selected>QoS 1</option>
+                                                <option value="2">QoS 2</option>
+                                            </select>
+                                        </div>
+                                        <button type="button" class="remove-topic-btn" title="Remove topic">
+                                            <i data-lucide="x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <span class="input-hint">Add multiple subscribe topics. Each message from any topic will be processed by the dashboard.</span>
+                            </div>
+        
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mqtt-pub-topic">Publish Command Topic</label>
+                                    <input type="text" id="mqtt-pub-topic" value="industrial/fire_gas/commands">
+                                    <span class="input-hint">Specify the command topic to publish resets/acknowledgements to</span>
+                                </div>
+                            </div>
+                            <button id="mqtt-connect-btn" class="primary-btn">Connect MQTT</button>
+                        </div>
+        
+                        <!-- Simulation Settings -->
+                        <div id="sim-control-section" class="panel-section">
+                            <h3><i data-lucide="play-circle"></i> Telemetry Stimulator</h3>
+                            
+                            <!-- Zone Selector for Simulation -->
+                            <div class="form-group">
+                                <label for="sim-zone-select">Select Target Zone</label>
+                                <select id="sim-zone-select">
+                                    <option value="level1">Level 1</option>
+                                    <option value="level2">Level 2</option>
+                                    <option value="level3">Level 3</option>
+                                    <option value="level4">Level 4</option>
+                                    <option value="level5">Level 5</option>
+                                    <option value="rooftop">Rooftop</option>
+                                </select>
+                            </div>
+        
+                            <!-- Smoke Slider -->
+                            <div class="slider-group">
+                                <div class="slider-labels">
+                                    <span>Smoke Occlusion</span>
+                                    <span id="val-smoke" class="slider-val">0.05%</span>
+                                </div>
+                                <input type="range" id="slider-smoke" min="0" max="500" value="5">
+                                <div class="slider-limits">
+                                    <span>0.0%</span>
+                                    <span>Limit: 1.5%</span>
+                                    <span>5.0%</span>
+                                </div>
+                            </div>
+        
+                            <!-- Heat/Temp Slider -->
+                            <div class="slider-group">
+                                <div class="slider-labels">
+                                    <span>Temperature</span>
+                                    <span id="val-temp" class="slider-val">22.0°C</span>
+                                </div>
+                                <input type="range" id="slider-temp" min="0" max="120" value="22">
+                                <div class="slider-limits">
+                                    <span>0°C</span>
+                                    <span>Limit: 57°C</span>
+                                    <span>120°C</span>
+                                </div>
+                            </div>
+        
+                            <!-- Gas Slider -->
+                            <div class="slider-group" id="sim-gas-group">
+                                <div class="slider-labels">
+                                    <span>Gas Level (CO/Methane)</span>
+                                    <span id="val-gas" class="slider-val">10 ppm</span>
+                                </div>
+                                <input type="range" id="slider-gas" min="0" max="1000" value="10">
+                                <div class="slider-limits">
+                                    <span>0 ppm</span>
+                                    <span>Limit: 200 ppm</span>
+                                    <span>1000 ppm</span>
+                                </div>
+                            </div>
+        
+                            <div class="simulation-actions">
+                                <button id="sim-mcp-btn" class="danger-btn flex-btn">
+                                    <i data-lucide="hand-metal"></i> Trigger Manual Alarm
+                                </button>
+                                <button id="sim-reset-hazard-btn" class="secondary-btn flex-btn">
+                                    <i data-lucide="refresh-cw"></i> Clear Hazards
+                                </button>
+                            </div>
+        
+                            <div class="auto-injector-card">
+                                <div class="injector-header">
+                                    <span class="card-label">Auto Hazard Scenario Injector</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="auto-inject-toggle">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <p class="card-desc">Randomly triggers overheating, smoke build-up, gas leaks, or normal operations every 15-30s.</p>
+                            </div>
+
+                            <div class="auto-injector-card" style="margin-top: 1rem;">
+                                <div class="injector-header">
+                                    <span class="card-label">PLC Heartbeat Watchdog</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="watchdog-healthy-toggle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <p class="card-desc">Simulates normal PLC operation. Unchecking triggers watchdog safety timeout after 5 seconds.</p>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- CENTER PANEL: Interactive Floor Plan & System Controls -->
+                    <section class="grid-panel panel-center">
+                        <div class="panel-header">
+                            <i data-lucide="map"></i>
+                            <h2>Interactive Site Floor Plan</h2>
+                            <div class="floor-plan-legend">
+                                <span class="legend-item"><span class="dot normal"></span> Normal</span>
+                                <span class="legend-item"><span class="dot warning"></span> Warning</span>
+                                <span class="legend-item"><span class="dot alarm"></span> Alarm</span>
+                                <span class="legend-item legend-tag-mode">Tag numbers only</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Graphic Floor Plan Canvas Container -->
+                        <div class="floor-plan-wrapper">
+                            <canvas id="floor-plan-canvas"></canvas>
+                        </div>
+        
+                        <!-- Safety Interlocks Decision Matrix -->
+                        <div class="interlock-matrix-panel">
+                            <div class="interlock-header">
+                                <i data-lucide="shield-alert"></i>
+                                <h3>FGS Safety Interlock Logic</h3>
+                            </div>
+                            <div class="interlock-matrix">
+                                <div class="interlock-card" id="interlock-smoke">
+                                    <span class="interlock-indicator normal" id="ind-smoke"></span>
+                                    <div class="interlock-card-body">
+                                        <span class="interlock-num">1</span>
+                                        <div class="interlock-text">
+                                            <span class="interlock-label">Smoke Detected at Level</span>
+                                            <span class="interlock-value" id="val-interlock-smoke">NORMAL</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="interlock-card" id="interlock-heat">
+                                    <span class="interlock-indicator normal" id="ind-heat"></span>
+                                    <div class="interlock-card-body">
+                                        <span class="interlock-num">2</span>
+                                        <div class="interlock-text">
+                                            <span class="interlock-label">Heat Detected at Level</span>
+                                            <span class="interlock-value" id="val-interlock-heat">NORMAL</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="interlock-card" id="interlock-coincidence">
+                                    <span class="interlock-indicator normal" id="ind-coincidence"></span>
+                                    <div class="interlock-card-body">
+                                        <span class="interlock-num">3</span>
+                                        <div class="interlock-text">
+                                            <span class="interlock-label">Confirm Fire (2oo2 Smoke)</span>
+                                            <span class="interlock-value" id="val-interlock-coincidence">INACTIVE</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="interlock-card" id="interlock-mcp">
+                                    <span class="interlock-indicator normal" id="ind-mcp"></span>
+                                    <div class="interlock-card-body">
+                                        <span class="interlock-num">4</span>
+                                        <div class="interlock-text">
+                                            <span class="interlock-label">Manual Alarm Trigger</span>
+                                            <span class="interlock-value" id="val-interlock-mcp">INACTIVE</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <!-- Emergency System Actions -->
+                        <div class="alarm-control-actions">
+                            <div class="action-status-card">
+                                <div class="status-indicator">
+                                    <div class="indicator-icon" id="hvac-status-icon">
+                                        <i data-lucide="fan" class="spinning animate-spin-custom"></i>
+                                    </div>
+                                    <div class="indicator-details">
+                                        <span class="label">HVAC Damper Status</span>
+                                        <span class="value" id="hvac-status-text">HVAC OPEN</span>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <div class="action-status-card">
+                                <div class="status-indicator">
+                                    <div class="indicator-icon red" id="sprinkler-status-icon">
+                                        <i data-lucide="droplet" id="sprinkler-icon"></i>
+                                    </div>
+                                    <div class="indicator-details">
+                                        <span class="label">Deluge System</span>
+                                        <span class="value" id="sprinkler-status-text">STANDBY</span>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <div class="action-buttons-group">
+                                <button id="cmd-ack-btn" class="warning-btn font-space">
+                                    <i data-lucide="bell-off"></i> ACKNOWLEDGE ALARM
+                                </button>
+                                <button id="cmd-reset-btn" class="success-btn font-space">
+                                    <i data-lucide="rotate-ccw"></i> SYSTEM RESET
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- RIGHT PANEL: Live Telemetry Cards & Historical Charts -->
+                    <section class="grid-panel panel-right">
+                        <div class="panel-header">
+                            <i data-lucide="activity"></i>
+                            <h2>Live Sensors Telemetry</h2>
+                        </div>
+        
+                        <!-- Real-time readings cards container -->
+                        <div class="telemetry-cards">
+                            <!-- Level 1 Card -->
+                            <div class="telemetry-card" id="card-level1">
+                                <div class="card-title">
+                                    <h3>Level 1</h3>
+                                    <div class="card-title-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="mos-toggle-container">
+                                            <span class="mos-label">MOS</span>
+                                            <label class="switch-small">
+                                                <input type="checkbox" id="mos-toggle-level1" class="mos-checkbox" data-zone="level1">
+                                                <span class="slider-small round"></span>
+                                            </label>
+                                        </div>
+                                        <span class="status-dot green" id="dot-level1"></span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="sensor-reading">
+                                        <i data-lucide="wind" class="smoke-icon"></i>
+                                        <span class="label">Smoke (SD 080101):</span>
+                                        <span class="val" id="val-smoke-level1">0.05%</span>
+                                    </div>
+                                    <div class="sensor-reading">
+                                        <i data-lucide="thermometer" class="temp-icon"></i>
+                                        <span class="label">Temp (HD 080101):</span>
+                                        <span class="val" id="val-temp-level1">22.0°C</span>
+                                    </div>
+                                    <div class="sensor-row">
+                                        <div class="sensor-state">
+                                            <i data-lucide="square" class="mcp-icon" id="mcp-level1"></i>
+                                            <span>MAC 080101</span>
+                                        </div>
+                                        <div class="sensor-state">
+                                            <i data-lucide="bell" class="bell-icon" id="bell-level1"></i>
+                                            <span>FAB 080101</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <!-- Level 2 Card -->
+                            <div class="telemetry-card" id="card-level2">
+                                <div class="card-title">
+                                    <h3>Level 2</h3>
+                                    <div class="card-title-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="mos-toggle-container">
+                                            <span class="mos-label">MOS</span>
+                                            <label class="switch-small">
+                                                <input type="checkbox" id="mos-toggle-level2" class="mos-checkbox" data-zone="level2">
+                                                <span class="slider-small round"></span>
+                                            </label>
+                                        </div>
+                                        <span class="status-dot green" id="dot-level2"></span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="sensor-reading">
+                                        <i data-lucide="wind" class="smoke-icon"></i>
+                                        <span class="label">Smoke (SD 080201):</span>
+                                        <span class="val" id="val-smoke-level2">0.07%</span>
+                                    </div>
+                                    <div class="sensor-reading">
+                                        <i data-lucide="thermometer" class="temp-icon"></i>
+                                        <span class="label">Temp (HD 080201):</span>
+                                        <span class="val" id="val-temp-level2">24.0°C</span>
+                                    </div>
+                                    <div class="sensor-row">
+                                        <div class="sensor-state">
+                                            <i data-lucide="square" class="mcp-icon" id="mcp-level2"></i>
+                                            <span>MAC 080201</span>
+                                        </div>
+                                        <div class="sensor-state">
+                                            <i data-lucide="bell" class="bell-icon" id="bell-level2"></i>
+                                            <span>FAB 080201</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <!-- Level 3 Card -->
+                            <div class="telemetry-card" id="card-level3">
+                                <div class="card-title">
+                                    <h3>Level 3</h3>
+                                    <div class="card-title-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="mos-toggle-container">
+                                            <span class="mos-label">MOS</span>
+                                            <label class="switch-small">
+                                                <input type="checkbox" id="mos-toggle-level3" class="mos-checkbox" data-zone="level3">
+                                                <span class="slider-small round"></span>
+                                            </label>
+                                        </div>
+                                        <span class="status-dot green" id="dot-level3"></span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="sensor-reading">
+                                        <i data-lucide="wind" class="smoke-icon"></i>
+                                        <span class="label">Smoke (SD 080301):</span>
+                                        <span class="val" id="val-smoke-level3">0.06%</span>
+                                    </div>
+                                    <div class="sensor-reading">
+                                        <i data-lucide="thermometer" class="temp-icon"></i>
+                                        <span class="label">Temp (HD 080301):</span>
+                                        <span class="val" id="val-temp-level3">23.5°C</span>
+                                    </div>
+                                    <div class="sensor-row">
+                                        <div class="sensor-state">
+                                            <i data-lucide="square" class="mcp-icon" id="mcp-level3"></i>
+                                            <span>MAC 080301</span>
+                                        </div>
+                                        <div class="sensor-state">
+                                            <i data-lucide="bell" class="bell-icon" id="bell-level3"></i>
+                                            <span>FAB 080301</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <!-- Level 4 Card -->
+                            <div class="telemetry-card" id="card-level4">
+                                <div class="card-title">
+                                    <h3>Level 4</h3>
+                                    <div class="card-title-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="mos-toggle-container">
+                                            <span class="mos-label">MOS</span>
+                                            <label class="switch-small">
+                                                <input type="checkbox" id="mos-toggle-level4" class="mos-checkbox" data-zone="level4">
+                                                <span class="slider-small round"></span>
+                                            </label>
+                                        </div>
+                                        <span class="status-dot green" id="dot-level4"></span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="sensor-reading">
+                                        <i data-lucide="wind" class="smoke-icon"></i>
+                                        <span class="label">Smoke (SD 080401):</span>
+                                        <span class="val" id="val-smoke-level4">0.04%</span>
+                                    </div>
+                                    <div class="sensor-reading">
+                                        <i data-lucide="thermometer" class="temp-icon"></i>
+                                        <span class="label">Temp (HD 080401):</span>
+                                        <span class="val" id="val-temp-level4">25.0°C</span>
+                                    </div>
+                                    <div class="sensor-row">
+                                        <div class="sensor-state">
+                                            <i data-lucide="square" class="mcp-icon" id="mcp-level4"></i>
+                                            <span>MAC 080401</span>
+                                        </div>
+                                        <div class="sensor-state">
+                                            <i data-lucide="bell" class="bell-icon" id="bell-level4"></i>
+                                            <span>FAB 080401</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <!-- Level 5 Card -->
+                            <div class="telemetry-card" id="card-level5">
+                                <div class="card-title">
+                                    <h3>Level 5</h3>
+                                    <div class="card-title-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="mos-toggle-container">
+                                            <span class="mos-label">MOS</span>
+                                            <label class="switch-small">
+                                                <input type="checkbox" id="mos-toggle-level5" class="mos-checkbox" data-zone="level5">
+                                                <span class="slider-small round"></span>
+                                            </label>
+                                        </div>
+                                        <span class="status-dot green" id="dot-level5"></span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="sensor-reading">
+                                        <i data-lucide="wind" class="smoke-icon"></i>
+                                        <span class="label">Smoke (SD 080501):</span>
+                                        <span class="val" id="val-smoke-level5">0.08%</span>
+                                    </div>
+                                    <div class="sensor-reading">
+                                        <i data-lucide="thermometer" class="temp-icon"></i>
+                                        <span class="label">Temp (HD 080501):</span>
+                                        <span class="val" id="val-temp-level5">23.0°C</span>
+                                    </div>
+                                    <div class="sensor-row">
+                                        <div class="sensor-state">
+                                            <i data-lucide="square" class="mcp-icon" id="mcp-level5"></i>
+                                            <span>MAC 080501</span>
+                                        </div>
+                                        <div class="sensor-state">
+                                            <i data-lucide="bell" class="bell-icon" id="bell-level5"></i>
+                                            <span>FAB 080501</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <!-- Rooftop Card (with Gas Sensor) -->
+                            <div class="telemetry-card" id="card-rooftop">
+                                <div class="card-title">
+                                    <h3>Rooftop</h3>
+                                    <div class="card-title-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="mos-toggle-container">
+                                            <span class="mos-label">MOS</span>
+                                            <label class="switch-small">
+                                                <input type="checkbox" id="mos-toggle-rooftop" class="mos-checkbox" data-zone="rooftop">
+                                                <span class="slider-small round"></span>
+                                            </label>
+                                        </div>
+                                        <span class="status-dot green" id="dot-rooftop"></span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="sensor-reading">
+                                        <i data-lucide="wind" class="smoke-icon"></i>
+                                        <span class="label">Smoke (SD 080601):</span>
+                                        <span class="val" id="val-smoke-rooftop">0.03%</span>
+                                    </div>
+                                    <div class="sensor-reading">
+                                        <i data-lucide="thermometer" class="temp-icon"></i>
+                                        <span class="label">Temp (HD 080601):</span>
+                                        <span class="val" id="val-temp-rooftop">28.0°C</span>
+                                    </div>
+                                    <div class="sensor-reading">
+                                        <i data-lucide="flame" class="gas-icon"></i>
+                                        <span class="label">Gas (GD 080601):</span>
+                                        <span class="val" id="val-gas-rooftop">12 ppm</span>
+                                    </div>
+                                    <div class="sensor-row">
+                                        <div class="sensor-state">
+                                            <i data-lucide="square" class="mcp-icon" id="mcp-rooftop"></i>
+                                            <span>MAC 080601</span>
+                                        </div>
+                                        <div class="sensor-state">
+                                            <i data-lucide="bell" class="bell-icon" id="bell-rooftop"></i>
+                                            <span>FAB 080601</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <!-- Live Chart Panels -->
+                        <div class="telemetry-charts">
+                            <div class="chart-container">
+                                <canvas id="temp-line-chart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="smoke-line-chart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+        
+                <!-- FOOTER: Event Log & Alarm Statistics -->
+                <footer class="dashboard-footer">
+                    <div class="panel-header log-header">
+                        <div class="log-title">
+                            <i data-lucide="clipboard-list"></i>
+                            <h2>Historical Event & Safety Alarm Log</h2>
+                        </div>
+                        <div class="log-actions">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="alarm">Alarms Only</button>
+                            <button class="filter-btn" data-filter="system">System Updates</button>
+                            <button id="clear-logs-btn" class="outline-btn"><i data-lucide="trash-2"></i> Clear</button>
+                            <button id="export-logs-btn" class="outline-btn"><i data-lucide="download"></i> Export CSV</button>
+                        </div>
+                    </div>
+                    
+                    <div class="log-table-container">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Timestamp</th>
+                                    <th style="width: 15%;">Event Category</th>
+                                    <th style="width: 15%;">Source Zone</th>
+                                    <th style="width: 35%;">Detailed Event Log Message</th>
+                                    <th style="width: 15%;">Severity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="event-log-body">
+                                <!-- Dynamically populated events -->
+                            </tbody>
+                        </table>
+                    </div>
+                </footer>
+            </div>
+
+            <!-- Page 2: Modbus Registry Page -->
+            <div id="page-registry" class="page-view">
+                
+                <!-- Registry Stats Indicators -->
+                <div class="registry-stats-row">
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value" id="stat-total-addr">46</div>
+                        <div class="stat-card-label">Modbus Channels</div>
+                    </div>
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value">42</div>
+                        <div class="stat-card-label">Smoke Sensors (SD)</div>
+                    </div>
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value">4</div>
+                        <div class="stat-card-label">Manual Callpoints (MAC)</div>
+                    </div>
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value">3</div>
+                        <div class="stat-card-label">Mapped PLC Registers</div>
+                    </div>
+                </div>
+
+                <!-- Searching, filtering and CSV exporting controls -->
+                <div class="registry-controls-panel">
+                    <div class="registry-search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="registry-search-input" placeholder="Search registers, channel tags or descriptions...">
+                    </div>
+                    
+                    <div class="registry-filters">
+                        <div class="filter-dropdown-group">
+                            <label>PLC Register:</label>
+                            <select id="registry-filter-register">
+                                <option value="all">All Registers</option>
+                                <option value="40010">40010</option>
+                                <option value="40012">40012</option>
+                                <option value="40013">40013</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-dropdown-group">
+                            <label>Device Type:</label>
+                            <select id="registry-filter-type">
+                                <option value="all">All Types</option>
+                                <option value="SD">Smoke Detectors (SD)</option>
+                                <option value="MAC">Manual Callpoints (MAC)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database address registry mapping Table -->
+                <div class="grid-panel registry-table-panel">
+                    <div class="panel-header">
+                        <i data-lucide="table-properties"></i>
+                        <h2>Address Registry Mapping Matrix</h2>
+                    </div>
+                    <div class="log-table-container registry-table-container">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Modbus Register</th>
+                                    <th style="width: 10%;">Bit / Channel</th>
+                                    <th style="width: 20%;">Device Tag</th>
+                                    <th style="width: 20%;">Alarm High High Tag</th>
+                                    <th style="width: 25%;">Functional Description</th>
+                                    <th style="width: 10%; text-align: center;">Live Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registry-table-body">
+                                <!-- Populated dynamically by app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 3: Safety Analytics & Historian Page -->
+            <div id="page-analytics" class="page-view">
+                
+                <!-- Analytics Metrics Summary Row -->
+                <div class="registry-stats-row">
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value" id="analytics-total-alarms">0</div>
+                        <div class="stat-card-label">Total Alarms Triggered</div>
+                    </div>
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value" id="analytics-active-bypasses">0</div>
+                        <div class="stat-card-label">Active Maintenance Overrides</div>
+                    </div>
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value" id="analytics-avg-ack-time">--</div>
+                        <div class="stat-card-label">Avg Acknowledgement Time</div>
+                    </div>
+                    <div class="registry-stat-card">
+                        <div class="stat-card-value" id="analytics-watchdog-uptime">100%</div>
+                        <div class="stat-card-label">PLC Comm Uptime</div>
+                    </div>
+                </div>
+
+                <!-- Charts Layout Grid -->
+                <div class="analytics-charts-grid">
+                    <!-- Chart 1: Alarm Frequency by Level -->
+                    <div class="grid-panel">
+                        <div class="panel-header">
+                            <i data-lucide="bar-chart-3"></i>
+                            <h2>Alarm Frequency by Level</h2>
+                        </div>
+                        <div class="analytics-chart-container">
+                            <canvas id="analytics-zone-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: Alarms by Device Type -->
+                    <div class="grid-panel">
+                        <div class="panel-header">
+                            <i data-lucide="pie-chart"></i>
+                            <h2>Alarms by Device Type</h2>
+                        </div>
+                        <div class="analytics-chart-container">
+                            <canvas id="analytics-device-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operator Audit Trail Table -->
+                <div class="grid-panel audit-table-panel">
+                    <div class="panel-header">
+                        <div class="log-title">
+                            <i data-lucide="shield-alert"></i>
+                            <h2>Operator Action Audit Trail Log</h2>
+                        </div>
+                        <div class="registry-controls-panel" style="margin: 0; padding: 0; border: none; background: none;">
+                            <div class="registry-search-box">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="audit-search-input" placeholder="Search audit trail..." style="width: 250px;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="log-table-container audit-table-container">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Timestamp</th>
+                                    <th style="width: 20%;">Operator / Username</th>
+                                    <th style="width: 15%;">Role</th>
+                                    <th style="width: 30%;">Executed Safety Command / Action</th>
+                                    <th style="width: 15%; text-align: center;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table-body">
+                                <!-- Populated dynamically by app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- JavaScript Application Code -->
+    <script src="app.js"></script>
+</body>
+</html>

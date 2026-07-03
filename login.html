@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FGS-PRO 3000 | Operator Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-primary: #080c14;
+            --bg-secondary: #0f172a;
+            --color-safe: #10b981;
+            --color-safe-glow: rgba(16, 185, 129, 0.4);
+            --color-alarm: #ef4444;
+            --color-alarm-glow: rgba(239, 68, 68, 0.6);
+            --color-warning: #f59e0b;
+            --border-color: rgba(255, 255, 255, 0.06);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --font-outfit: 'Outfit', sans-serif;
+            --font-space: 'Space Grotesk', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-primary);
+            font-family: var(--font-outfit);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background Grid */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+
+        /* Radial gradient spotlight on center */
+        .spotlight {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+            z-index: 0;
+            animation: spotlight-pulse 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes spotlight-pulse {
+            from { background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.04) 0%, transparent 70%); }
+            to   { background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.09) 0%, transparent 60%); }
+        }
+
+        /* Floating corner warning lights */
+        .corner-light {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-alarm);
+            box-shadow: 0 0 12px var(--color-alarm);
+            animation: blink-light 1.2s infinite alternate;
+        }
+        .corner-light.tl { top: 24px; left: 24px; }
+        .corner-light.tr { top: 24px; right: 24px; }
+        .corner-light.bl { bottom: 24px; left: 24px; }
+        .corner-light.br { bottom: 24px; right: 24px; }
+
+        @keyframes blink-light {
+            from { opacity: 1; box-shadow: 0 0 8px var(--color-alarm); }
+            to   { opacity: 0.2; box-shadow: 0 0 2px var(--color-alarm); }
+        }
+
+        /* Login card */
+        .login-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 420px;
+            padding: 1rem;
+        }
+
+        .login-card {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.03);
+            overflow: hidden;
+            animation: card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes card-enter {
+            from { opacity: 0; transform: translateY(24px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Card Top Alert Banner */
+        .card-banner {
+            background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(245,158,11,0.08));
+            border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .banner-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-alarm);
+            box-shadow: 0 0 8px var(--color-alarm);
+            animation: blink-light 0.8s infinite alternate;
+            flex-shrink: 0;
+        }
+
+        .banner-text {
+            font-size: 0.65rem;
+            font-family: var(--font-space);
+            letter-spacing: 1.5px;
+            color: #fca5a5;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Card Body */
+        .card-body {
+            padding: 2rem 2rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Logo / Header Section */
+        .login-header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+            border: 1px solid rgba(16,185,129,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .logo-icon svg {
+            color: var(--color-safe);
+            width: 28px;
+            height: 28px;
+        }
+
+        .login-header h1 {
+            font-family: var(--font-space);
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #f8fafc, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-header .subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        /* Form */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .field-group label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+            font-family: var(--font-space);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper .input-icon {
+            position: absolute;
+            left: 12px;
+            color: var(--text-muted);
+            pointer-events: none;
+            width: 15px;
+            height: 15px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.7rem 2.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-family: var(--font-outfit);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper input::placeholder {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .input-wrapper input:focus {
+            border-color: rgba(16, 185, 129, 0.45);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.08);
+        }
+
+        .input-wrapper .toggle-password {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .input-wrapper .toggle-password:hover {
+            color: var(--text-secondary);
+        }
+
+        .input-wrapper .toggle-password svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        /* Error Alert */
+        .error-alert {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 8px;
+            padding: 0.65rem 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.78rem;
+            color: #fca5a5;
+            display: none;
+            animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
+
+        .error-alert svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+        .error-alert.show { display: flex; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%       { transform: translateX(-6px); }
+            40%       { transform: translateX(6px); }
+            60%       { transform: translateX(-4px); }
+            80%       { transform: translateX(4px); }
+        }
+
+        /* Login Button */
+        .login-btn {
+            width: 100%;
+            padding: 0.8rem;
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            font-family: var(--font-space);
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, #047857, #059669);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .login-btn:active {
+            transform: translateY(0px);
+        }
+
+        .login-btn.loading {
+            pointer-events: none;
+            opacity: 0.75;
+        }
+
+        .login-btn svg { width: 16px; height: 16px; }
+
+        /* Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        .login-btn.loading .spinner { display: block; }
+        .login-btn.loading .btn-text { display: none; }
+        .login-btn.loading .btn-icon { display: none; }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Default Credentials Hint Card */
+        .hint-card {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.12);
+            border-radius: 8px;
+            padding: 0.65rem 0.85rem;
+            font-size: 0.7rem;
+            color: #93c5fd;
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+
+        .hint-card svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+
+        .hint-card span { line-height: 1.5; }
+
+        /* Footer */
+        .card-footer {
+            padding: 0.85rem 2rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.15);
+            text-align: center;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="spotlight"></div>
+    <div class="corner-light tl"></div>
+    <div class="corner-light tr"></div>
+    <div class="corner-light bl"></div>
+    <div class="corner-light br"></div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+
+            <!-- Top Banner -->
+            <div class="card-banner">
+                <div class="banner-dot"></div>
+                <span class="banner-text">Restricted Access — Authorised Personnel Only</span>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body">
+
+                <!-- Header / Branding -->
+                <div class="login-header">
+                    <div class="logo-icon">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <div>
+                        <h1>FGS-PRO 3000</h1>
+                        <p class="subtitle">Fire & Gas Safety Control System</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Login Form -->
+                <form class="login-form" id="login-form" autocomplete="off" onsubmit="return false;">
+
+                    <!-- Username -->
+                    <div class="field-group">
+                        <label for="login-username">Operator Username</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <input type="text" id="login-username" placeholder="Enter your username" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="field-group">
+                        <label for="login-password">Password</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="lock" class="input-icon"></i>
+                            <input type="password" id="login-password" placeholder="Enter your password" autocomplete="off">
+                            <button type="button" class="toggle-password" id="toggle-pass-btn" title="Show/Hide Password">
+                                <i data-lucide="eye" id="toggle-pass-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div class="error-alert" id="login-error">
+                        <i data-lucide="alert-circle"></i>
+                        <span id="login-error-msg">Invalid username or password. Access denied.</span>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="button" class="login-btn" id="login-submit-btn">
+                        <div class="spinner"></div>
+                        <i data-lucide="log-in" class="btn-icon"></i>
+                        <span class="btn-text">AUTHENTICATE & ACCESS SYSTEM</span>
+                    </button>
+
+                    <!-- Credential Hint -->
+                    <div class="hint-card">
+                        <i data-lucide="info"></i>
+                        <span>Default credentials: <strong>admin</strong> / <strong>admin123</strong> &nbsp;|&nbsp; <strong>operator</strong> / <strong>fgs2024</strong></span>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="card-footer">
+                FGS-PRO 3000 &nbsp;•&nbsp; All access attempts are logged and monitored
+            </div>
+
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // If already logged in, redirect directly to dashboard
+        if (sessionStorage.getItem('fgs_authenticated') === 'true') {
+            window.location.href = 'index.html';
+        }
+
+        // Toggle password visibility
+        const toggleBtn = document.getElementById('toggle-pass-btn');
+        const passInput = document.getElementById('login-password');
+        const toggleIcon = document.getElementById('toggle-pass-icon');
+        let showingPassword = false;
+
+        toggleBtn.addEventListener('click', () => {
+            showingPassword = !showingPassword;
+            passInput.type = showingPassword ? 'text' : 'password';
+            toggleIcon.setAttribute('data-lucide', showingPassword ? 'eye-off' : 'eye');
+            lucide.createIcons();
+        });
+
+        // Enter key submits form
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('login-submit-btn').click();
+            }
+        });
+
+        // Login Button click
+        document.getElementById('login-submit-btn').addEventListener('click', () => {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-submit-btn');
+            const errorDiv = document.getElementById('login-error');
+            const errorMsg = document.getElementById('login-error-msg');
+
+            // Reset error state
+            errorDiv.classList.remove('show');
+
+            // Show loading state
+            btn.classList.add('loading');
+
+            // Simulate short auth delay for realism
+            setTimeout(() => {
+                const result = FGSAuth.authenticate(username, password);
+
+                btn.classList.remove('loading');
+
+                if (result.success) {
+                    // Store authenticated user session
+                    sessionStorage.setItem('fgs_authenticated', 'true');
+                    sessionStorage.setItem('fgs_user', JSON.stringify({
+                        username: result.user.username,
+                        role: result.user.role,
+                        loginTime: new Date().toISOString()
+                    }));
+
+                    // Animate card out before redirecting
+                    document.querySelector('.login-card').style.animation = 'none';
+                    document.querySelector('.login-card').style.transition = 'all 0.4s ease';
+                    document.querySelector('.login-card').style.opacity = '0';
+                    document.querySelector('.login-card').style.transform = 'translateY(-16px) scale(0.97)';
+
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 400);
+
+                } else {
+                    errorMsg.textContent = result.message;
+                    errorDiv.classList.add('show');
+
+                    // Briefly shake the input fields
+                    passInput.value = '';
+                    passInput.focus();
+                    lucide.createIcons();
+                }
+            }, 800);
+        });
+    </script>
+</body>
+</html>
