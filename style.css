@@ -1,29 +1,36 @@
-/* Design System Variables */
+/* Design System Variables - Professional Enterprise Theme */
 :root {
-    --bg-primary: #080c14;
-    --bg-secondary: #0f172a;
-    --bg-panel: rgba(15, 23, 42, 0.65);
-    --border-color: rgba(255, 255, 255, 0.06);
-    --border-glow: rgba(59, 130, 246, 0.15);
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-panel: rgba(17, 24, 39, 0.85);
+    --border-color: rgba(148, 163, 184, 0.12);
+    --border-accent: rgba(59, 130, 246, 0.3);
     
-    /* Neon Safety Color Palette */
+    /* Professional Safety Color Palette */
     --color-safe: #10b981;
-    --color-safe-glow: rgba(16, 185, 129, 0.4);
+    --color-safe-bg: rgba(16, 185, 129, 0.12);
     --color-warning: #f59e0b;
-    --color-warning-glow: rgba(245, 158, 11, 0.4);
+    --color-warning-bg: rgba(245, 158, 11, 0.12);
     --color-alarm: #ef4444;
-    --color-alarm-glow: rgba(239, 68, 68, 0.6);
-    --color-gas: #00f5ff;
-    --color-gas-glow: rgba(0, 245, 255, 0.4);
+    --color-alarm-bg: rgba(239, 68, 68, 0.12);
+    --color-info: #3b82f6;
+    --color-info-bg: rgba(59, 130, 246, 0.12);
     
     /* Text Colors */
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+    --text-muted: #4b5563;
     
-    /* Font Families */
-    --font-outfit: 'Outfit', sans-serif;
-    --font-space: 'Space Grotesk', sans-serif;
+    /* Font Families - Professional */
+    --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    
+    /* Shadows & Effects */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --glow-subtle: 0 0 20px rgba(59, 130, 246, 0.1);
 }
 
 /* Global Reset & Scrollbars */
@@ -36,13 +43,16 @@
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: var(--font-outfit);
+    font-family: var(--font-inter);
     min-height: 100vh;
     overflow-x: hidden;
     position: relative;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* Background Cyber Grid Effect */
+/* Subtle Background Grid Pattern */
 .grid-background {
     position: fixed;
     top: 0;
@@ -50,9 +60,9 @@ body {
     width: 100%;
     height: 100%;
     background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
+        linear-gradient(to right, rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
     pointer-events: none;
     z-index: -1;
 }
@@ -84,90 +94,101 @@ body {
     margin: 0 auto;
 }
 
-/* Header Design */
+/* Professional Header Design */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
-    background: var(--bg-panel);
+    padding: 1rem 1.75rem;
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(11, 16, 29, 0.95) 100%);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    border-radius: 8px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-md);
 }
 
-.header-logo {
+.header-title-container {
+    display: flex;
+    align-items: center;
+}
+
+.header-branding {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
+.header-shield-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--color-safe);
+    opacity: 0.9;
+}
+
 .logo-text h1 {
-    font-family: var(--font-space);
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.logo-text span {
-    font-size: 0.65rem;
+    font-family: var(--font-inter);
+    font-size: 1.25rem;
     font-weight: 600;
-    color: var(--text-muted);
-    letter-spacing: 2px;
-    display: block;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-/* Pulsing Rings for Logo & Indicators */
-.pulse-ring {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    position: relative;
-}
-.pulse-ring.red {
-    background-color: var(--color-alarm);
-    box-shadow: 0 0 10px var(--color-alarm);
-    animation: alarm-pulse-glow 1.5s infinite alternate;
+.header-subtitle {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
+    display: block;
+    margin-top: 0.25rem;
 }
 
 .header-status-bar {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
-.status-badge {
+.system-status-indicator {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.85rem;
-    border-radius: 8px;
-    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    font-family: var(--font-space);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(16, 185, 129, 0.1);
+    letter-spacing: 0.05em;
+    background: var(--color-safe-bg);
     color: var(--color-safe);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.05);
-    transition: all 0.3s ease;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    transition: all 0.2s ease;
 }
 
-.status-badge.disconnect {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--color-alarm);
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.05);
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid var(--border-color);
 }
 
-.status-badge.connecting {
-    background: rgba(245, 158, 11, 0.1);
-    color: var(--color-warning);
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.05);
+.status-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-pulse.green {
+    background: var(--color-safe);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
 }
 
 .status-icon {
@@ -175,75 +196,81 @@ body {
     height: 14px;
 }
 
-.header-action-btn {
-    background: rgba(255, 255, 255, 0.05);
+.header-icon-btn {
+    background: transparent;
     border: 1px solid var(--border-color);
-    color: var(--text-primary);
+    color: var(--text-secondary);
     cursor: pointer;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
 }
-.header-action-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+
+.header-icon-btn:hover {
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: var(--text-primary);
 }
 
-/* Logout Button — red-tinted danger variant */
 .logout-btn {
     background: rgba(239, 68, 68, 0.08);
-    border-color: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
     color: #fca5a5;
 }
-.logout-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
-    color: #fee2e2;
-}
 
-/* Logged-in User Badge */
-.user-badge {
+.operator-profile {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.85rem;
-    border-radius: 8px;
-    background: rgba(16, 185, 129, 0.07);
-    border: 1px solid rgba(16, 185, 129, 0.15);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.04);
+    gap: 0.6rem;
+    padding: 0.35rem 0.75rem 0.35rem 0.35rem;
+    border-radius: 6px;
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid var(--border-color);
 }
 
-.user-badge .status-icon {
-    color: var(--color-safe);
-    width: 14px;
-    height: 14px;
+.operator-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-info);
 }
 
-.user-badge-info {
+.operator-avatar i {
+    width: 18px;
+    height: 18px;
+}
+
+.operator-info {
     display: flex;
     flex-direction: column;
-    line-height: 1.2;
+    line-height: 1.3;
 }
 
-.user-badge-name {
-    font-size: 0.72rem;
-    font-weight: 700;
-    font-family: var(--font-space);
-    color: var(--text-primary);
-    letter-spacing: 0.3px;
-}
-
-.user-badge-role {
-    font-size: 0.58rem;
-    color: var(--color-safe);
+.operator-name {
+    font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.5px;
+    color: var(--text-primary);
+}
+
+.operator-role {
+    font-size: 0.6rem;
+    color: var(--text-tertiary);
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 /* Grid Layout Columns */
