@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial Fire & Gas Monitoring Safety Center</title>
+    <title>Enterprise Fire & Gas Safety Monitoring System | FGS-PRO 3000</title>
+    <meta name="description" content="Professional industrial fire and gas safety monitoring dashboard with real-time telemetry, PLC integration, and comprehensive safety analytics">
     <!-- CSS Stylesheet -->
     <link rel="stylesheet" href="style.css">
     <!-- Auth Module: must load first to guard access -->
     <script src="auth.js"></script>
     <!-- Auth Guard: redirect to login if not authenticated -->
     <script>FGSAuth.requireAuth();</script>
-    <!-- Google Fonts: Outfit & Space Grotesk for industrial high-tech look -->
+    <!-- Google Fonts: Inter & JetBrains Mono for professional enterprise look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- MQTT.js CDN -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <!-- Lucide Icons CDN -->
@@ -31,69 +32,80 @@
         <!-- Left Sidebar Navigation -->
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <div class="pulse-ring red"></div>
+                <div class="logo-icon-wrapper">
+                    <div class="logo-shield">
+                        <i data-lucide="shield-check" class="logo-shield-icon"></i>
+                    </div>
+                </div>
                 <div class="logo-text">
                     <h1>FGS-PRO 3000</h1>
-                    <span>SAFETY HUB</span>
+                    <span>ENTERPRISE SAFETY MONITORING</span>
                 </div>
             </div>
             
             <nav class="sidebar-menu">
+                <div class="menu-section-title">MAIN</div>
                 <button class="nav-item active" data-page="dashboard">
                     <i data-lucide="layout-dashboard"></i>
-                    <span>Safety Dashboard</span>
+                    <span>Operations Dashboard</span>
                 </button>
                 <button class="nav-item" data-page="registry">
-                    <i data-lucide="table-properties"></i>
-                    <span>Modbus Registry</span>
+                    <i data-lucide="database"></i>
+                    <span>Device Registry</span>
                 </button>
                 <button class="nav-item" data-page="analytics">
-                    <i data-lucide="bar-chart-3"></i>
-                    <span>Safety Analytics</span>
+                    <i data-lucide="trending-up"></i>
+                    <span>Analytics & Reports</span>
                 </button>
 
-                <div class="sidebar-section-label">Site Levels</div>
+                <div class="menu-section-title">MONITORING ZONES</div>
                 <button class="nav-item nav-level" data-page="level5">
-                    <i data-lucide="layers"></i>
+                    <i data-lucide="building-2"></i>
                     <span>Level 5</span>
                 </button>
                 <button class="nav-item nav-level" data-page="rooftop">
-                    <i data-lucide="cloud"></i>
-                    <span>Rooftop</span>
+                    <i data-lucide="cloud-sun"></i>
+                    <span>Rooftop Plant</span>
                 </button>
                 <button class="nav-item nav-level" data-page="level3">
-                    <i data-lucide="layers"></i>
+                    <i data-lucide="building-2"></i>
                     <span>Level 3</span>
                 </button>
                 <button class="nav-item nav-level" data-page="level4">
-                    <i data-lucide="layers"></i>
+                    <i data-lucide="building-2"></i>
                     <span>Level 4</span>
                 </button>
                 <button class="nav-item nav-level" data-page="level1">
-                    <i data-lucide="layers"></i>
+                    <i data-lucide="building-2"></i>
                     <span>Level 1</span>
                 </button>
                 <button class="nav-item nav-level" data-page="level2">
-                    <i data-lucide="layers"></i>
+                    <i data-lucide="building-2"></i>
                     <span>Level 2</span>
                 </button>
             </nav>
             
             <div class="sidebar-footer">
-                <div class="sidebar-watchdog" id="sidebar-watchdog-container">
-                    <div class="watchdog-pulse-container">
-                        <i data-lucide="heart" class="watchdog-heart pulsing" id="watchdog-heart"></i>
+                <div class="system-status-panel">
+                    <div class="status-row">
+                        <div class="status-indicator-left">
+                            <div class="watchdog-pulse-container">
+                                <i data-lucide="activity" class="watchdog-heart pulsing" id="watchdog-heart"></i>
+                            </div>
+                            <div class="watchdog-info">
+                                <span class="watchdog-label">PLC COMMUNICATION</span>
+                                <span class="watchdog-status" id="watchdog-status">NORMAL (250ms)</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="watchdog-info">
-                        <span class="watchdog-label">PLC WATCHDOG</span>
-                        <span class="watchdog-status" id="watchdog-status">OK (250ms)</span>
+                    <div class="status-row">
+                        <div class="health-badge" id="sidebar-health-badge">
+                            <span class="status-dot green" id="sidebar-health-dot"></span>
+                            <span id="sidebar-health-text">SYSTEM OPERATIONAL</span>
+                        </div>
                     </div>
                 </div>
-                <div class="sidebar-health-summary">
-                    <span class="status-dot green" id="sidebar-health-dot"></span>
-                    <span id="sidebar-health-text">HEALTH: SECURE</span>
-                </div>
-                <span class="sidebar-ver">V2.4.1</span>
+                <div class="sidebar-version">Version 3.0.1 Enterprise</div>
             </div>
         </aside>
         
@@ -103,36 +115,43 @@
             <!-- Global Top Header -->
             <header class="dashboard-header">
                 <div class="header-title-container">
-                    <h2 id="current-page-title">SAFETY CONTROL CENTER</h2>
-                    <span class="header-subtitle">LIVE OPERATIONS & PLC MONITORS</span>
+                    <div class="header-branding">
+                        <i data-lucide="shield-alert" class="header-shield-icon"></i>
+                        <div>
+                            <h2 id="current-page-title">FIRE & GAS SAFETY OPERATIONS CENTER</h2>
+                            <span class="header-subtitle">Real-time Monitoring | PLC Integration | Safety Analytics</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="header-status-bar">
-                    <div class="status-badge" id="system-health-badge">
-                        <i data-lucide="shield-check" class="status-icon"></i>
-                        <span id="system-health-text">SYSTEM HEALTH: SECURE</span>
+                    <div class="system-status-indicator" id="system-health-badge">
+                        <span class="status-pulse green"></span>
+                        <span id="system-health-text">SYSTEM OPERATIONAL</span>
                     </div>
                     
-                    <div class="status-badge disconnect" id="mqtt-status-badge">
+                    <div class="connection-status" id="mqtt-status-badge">
                         <i data-lucide="wifi-off" class="status-icon" id="mqtt-status-icon"></i>
-                        <span id="mqtt-status-text">MQTT: DISCONNECTED</span>
+                        <span id="mqtt-status-text">MQTT Offline</span>
                     </div>
                     
-                    <button id="audio-mute-btn" class="header-action-btn" title="Mute/Unmute Alarm Sound">
+                    <button id="audio-mute-btn" class="header-icon-btn" title="Mute/Unmute Alarm Sound">
                         <i data-lucide="volume-2" id="mute-icon"></i>
                     </button>
     
                     <!-- Logged-in Operator Badge -->
-                    <div class="user-badge" id="user-badge">
-                        <i data-lucide="user-check" class="status-icon"></i>
-                        <div class="user-badge-info">
-                            <span class="user-badge-name" id="user-badge-name">OPERATOR</span>
-                            <span class="user-badge-role" id="user-badge-role">ROLE</span>
+                    <div class="operator-profile" id="user-badge">
+                        <div class="operator-avatar">
+                            <i data-lucide="user-circle"></i>
+                        </div>
+                        <div class="operator-info">
+                            <span class="operator-name" id="user-badge-name">Operator</span>
+                            <span class="operator-role" id="user-badge-role">Safety Engineer</span>
                         </div>
                     </div>
     
                     <!-- Logout Button -->
-                    <button id="logout-btn" class="header-action-btn logout-btn" title="Logout from System">
+                    <button id="logout-btn" class="header-icon-btn logout-btn" title="Logout from System">
                         <i data-lucide="log-out"></i>
                     </button>
                 </div>
@@ -145,14 +164,20 @@
                     <!-- LEFT PANEL: Controls (MQTT + Simulation) -->
                     <section class="grid-panel panel-left">
                         <div class="panel-header">
-                            <i data-lucide="sliders"></i>
-                            <h2>System Control</h2>
+                            <i data-lucide="settings-2"></i>
+                            <h2>System Configuration</h2>
                         </div>
                         
                         <!-- Toggle between Simulation & Live MQTT -->
-                        <div class="control-mode-selector">
-                            <button id="mode-sim-btn" class="mode-btn active">Simulation Mode</button>
-                            <button id="mode-mqtt-btn" class="mode-btn">Live MQTT Mode</button>
+                        <div class="operation-mode-selector">
+                            <button id="mode-sim-btn" class="mode-btn active">
+                                <i data-lucide="cpu"></i>
+                                <span>Simulation Mode</span>
+                            </button>
+                            <button id="mode-mqtt-btn" class="mode-btn">
+                                <i data-lucide="cloud-cog"></i>
+                                <span>Live MQTT Mode</span>
+                            </button>
                         </div>
         
                         <!-- MQTT Settings Configuration -->
@@ -247,31 +272,31 @@
         
                         <!-- Simulation Settings -->
                         <div id="sim-control-section" class="panel-section">
-                            <h3><i data-lucide="play-circle"></i> Telemetry Stimulator</h3>
+                            <h3><i data-lucide="gauge"></i> Test Signal Generator</h3>
                             
                             <!-- Zone Selector for Simulation -->
                             <div class="form-group">
-                                <label for="sim-zone-select">Select Target Zone</label>
+                                <label for="sim-zone-select">Target Monitoring Zone</label>
                                 <select id="sim-zone-select">
                                     <option value="level1">Level 1</option>
                                     <option value="level2">Level 2</option>
                                     <option value="level3">Level 3</option>
                                     <option value="level4">Level 4</option>
                                     <option value="level5">Level 5</option>
-                                    <option value="rooftop">Rooftop</option>
+                                    <option value="rooftop">Rooftop Plant</option>
                                 </select>
                             </div>
         
                             <!-- Smoke Slider -->
                             <div class="slider-group">
                                 <div class="slider-labels">
-                                    <span>Smoke Occlusion</span>
-                                    <span id="val-smoke" class="slider-val">0.05%</span>
+                                    <span>Smoke Density (Optical)</span>
+                                    <span id="val-smoke" class="slider-val">0.05% obs/m</span>
                                 </div>
                                 <input type="range" id="slider-smoke" min="0" max="500" value="5">
                                 <div class="slider-limits">
                                     <span>0.0%</span>
-                                    <span>Limit: 1.5%</span>
+                                    <span>Alarm: 1.5%</span>
                                     <span>5.0%</span>
                                 </div>
                             </div>
@@ -279,13 +304,13 @@
                             <!-- Heat/Temp Slider -->
                             <div class="slider-group">
                                 <div class="slider-labels">
-                                    <span>Temperature</span>
+                                    <span>Ambient Temperature</span>
                                     <span id="val-temp" class="slider-val">22.0°C</span>
                                 </div>
                                 <input type="range" id="slider-temp" min="0" max="120" value="22">
                                 <div class="slider-limits">
                                     <span>0°C</span>
-                                    <span>Limit: 57°C</span>
+                                    <span>Alarm: 57°C</span>
                                     <span>120°C</span>
                                 </div>
                             </div>
@@ -293,46 +318,52 @@
                             <!-- Gas Slider -->
                             <div class="slider-group" id="sim-gas-group">
                                 <div class="slider-labels">
-                                    <span>Gas Level (CO/Methane)</span>
+                                    <span>Gas Concentration (CO/CH₄)</span>
                                     <span id="val-gas" class="slider-val">10 ppm</span>
                                 </div>
                                 <input type="range" id="slider-gas" min="0" max="1000" value="10">
                                 <div class="slider-limits">
                                     <span>0 ppm</span>
-                                    <span>Limit: 200 ppm</span>
+                                    <span>Alarm: 200 ppm</span>
                                     <span>1000 ppm</span>
                                 </div>
                             </div>
         
                             <div class="simulation-actions">
                                 <button id="sim-mcp-btn" class="danger-btn flex-btn">
-                                    <i data-lucide="hand-metal"></i> Trigger Manual Alarm
+                                    <i data-lucide="triangle-alert"></i> Initiate Manual Call Point
                                 </button>
                                 <button id="sim-reset-hazard-btn" class="secondary-btn flex-btn">
-                                    <i data-lucide="refresh-cw"></i> Clear Hazards
+                                    <i data-lucide="rotate-ccw"></i> Reset Test Conditions
                                 </button>
                             </div>
         
-                            <div class="auto-injector-card">
-                                <div class="injector-header">
-                                    <span class="card-label">Auto Hazard Scenario Injector</span>
+                            <div class="config-card">
+                                <div class="config-card-header">
+                                    <div class="config-card-title">
+                                        <i data-lucide="flask-conical"></i>
+                                        <span>Automated Test Scenario Generator</span>
+                                    </div>
                                     <label class="switch">
                                         <input type="checkbox" id="auto-inject-toggle">
                                         <span class="slider round"></span>
                                     </label>
                                 </div>
-                                <p class="card-desc">Randomly triggers overheating, smoke build-up, gas leaks, or normal operations every 15-30s.</p>
+                                <p class="config-card-desc">Executes randomized test scenarios including thermal events, smoke conditions, and gas detection every 15-30 seconds.</p>
                             </div>
 
-                            <div class="auto-injector-card" style="margin-top: 1rem;">
-                                <div class="injector-header">
-                                    <span class="card-label">PLC Heartbeat Watchdog</span>
+                            <div class="config-card">
+                                <div class="config-card-header">
+                                    <div class="config-card-title">
+                                        <i data-lucide="heart-pulse"></i>
+                                        <span>PLC Health Monitor Simulation</span>
+                                    </div>
                                     <label class="switch">
                                         <input type="checkbox" id="watchdog-healthy-toggle" checked>
                                         <span class="slider round"></span>
                                     </label>
                                 </div>
-                                <p class="card-desc">Simulates normal PLC operation. Unchecking triggers watchdog safety timeout after 5 seconds.</p>
+                                <p class="config-card-desc">Maintains simulated PLC heartbeat signal. Disabling will trigger communication fault alarm after 5 second timeout.</p>
                             </div>
                         </div>
                     </section>
@@ -340,13 +371,13 @@
                     <!-- CENTER PANEL: Interactive Floor Plan & System Controls -->
                     <section class="grid-panel panel-center">
                         <div class="panel-header">
-                            <i data-lucide="map"></i>
-                            <h2>Interactive Site Floor Plan</h2>
+                            <i data-lucide="map-pin"></i>
+                            <h2>Facility Layout Overview</h2>
                             <div class="floor-plan-legend">
                                 <span class="legend-item"><span class="dot normal"></span> Normal</span>
                                 <span class="legend-item"><span class="dot warning"></span> Warning</span>
-                                <span class="legend-item"><span class="dot alarm"></span> Alarm</span>
-                                <span class="legend-item legend-tag-mode">Tag numbers only</span>
+                                <span class="legend-item"><span class="dot alarm"></span> Critical</span>
+                                <span class="legend-item legend-tag-mode">Device IDs displayed</span>
                             </div>
                         </div>
                         
@@ -358,47 +389,47 @@
                         <!-- Safety Interlocks Decision Matrix -->
                         <div class="interlock-matrix-panel">
                             <div class="interlock-header">
-                                <i data-lucide="shield-alert"></i>
-                                <h3>FGS Safety Interlock Logic</h3>
+                                <i data-lucide="git-merge"></i>
+                                <h3>Safety Interlock Status Matrix</h3>
                             </div>
                             <div class="interlock-matrix">
                                 <div class="interlock-card" id="interlock-smoke">
                                     <span class="interlock-indicator normal" id="ind-smoke"></span>
                                     <div class="interlock-card-body">
-                                        <span class="interlock-num">1</span>
+                                        <span class="interlock-num">01</span>
                                         <div class="interlock-text">
-                                            <span class="interlock-label">Smoke Detected at Level</span>
-                                            <span class="interlock-value" id="val-interlock-smoke">NORMAL</span>
+                                            <span class="interlock-label">Smoke Detection Active</span>
+                                            <span class="interlock-value" id="val-interlock-smoke">NOMINAL</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="interlock-card" id="interlock-heat">
                                     <span class="interlock-indicator normal" id="ind-heat"></span>
                                     <div class="interlock-card-body">
-                                        <span class="interlock-num">2</span>
+                                        <span class="interlock-num">02</span>
                                         <div class="interlock-text">
-                                            <span class="interlock-label">Heat Detected at Level</span>
-                                            <span class="interlock-value" id="val-interlock-heat">NORMAL</span>
+                                            <span class="interlock-label">Thermal Detection Active</span>
+                                            <span class="interlock-value" id="val-interlock-heat">NOMINAL</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="interlock-card" id="interlock-coincidence">
                                     <span class="interlock-indicator normal" id="ind-coincidence"></span>
                                     <div class="interlock-card-body">
-                                        <span class="interlock-num">3</span>
+                                        <span class="interlock-num">03</span>
                                         <div class="interlock-text">
-                                            <span class="interlock-label">Confirm Fire (2oo2 Smoke)</span>
-                                            <span class="interlock-value" id="val-interlock-coincidence">INACTIVE</span>
+                                            <span class="interlock-label">Fire Confirmation (2oo2 Logic)</span>
+                                            <span class="interlock-value" id="val-interlock-coincidence">STANDBY</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="interlock-card" id="interlock-mcp">
                                     <span class="interlock-indicator normal" id="ind-mcp"></span>
                                     <div class="interlock-card-body">
-                                        <span class="interlock-num">4</span>
+                                        <span class="interlock-num">04</span>
                                         <div class="interlock-text">
-                                            <span class="interlock-label">Manual Alarm Trigger</span>
-                                            <span class="interlock-value" id="val-interlock-mcp">INACTIVE</span>
+                                            <span class="interlock-label">Manual Call Point Activation</span>
+                                            <span class="interlock-value" id="val-interlock-mcp">STANDBY</span>
                                         </div>
                                     </div>
                                 </div>
@@ -406,37 +437,33 @@
                         </div>
         
                         <!-- Emergency System Actions -->
-                        <div class="alarm-control-actions">
-                            <div class="action-status-card">
-                                <div class="status-indicator">
-                                    <div class="indicator-icon" id="hvac-status-icon">
-                                        <i data-lucide="fan" class="spinning animate-spin-custom"></i>
-                                    </div>
-                                    <div class="indicator-details">
-                                        <span class="label">HVAC Damper Status</span>
-                                        <span class="value" id="hvac-status-text">HVAC OPEN</span>
-                                    </div>
+                        <div class="emergency-controls-panel">
+                            <div class="system-status-item">
+                                <div class="status-icon-wrapper" id="hvac-status-icon">
+                                    <i data-lucide="fan" class="spinning animate-spin-custom"></i>
+                                </div>
+                                <div class="status-info">
+                                    <span class="status-label">HVAC Isolation Dampers</span>
+                                    <span class="status-value" id="hvac-status-text">OPEN - NORMAL OPERATION</span>
                                 </div>
                             </div>
         
-                            <div class="action-status-card">
-                                <div class="status-indicator">
-                                    <div class="indicator-icon red" id="sprinkler-status-icon">
-                                        <i data-lucide="droplet" id="sprinkler-icon"></i>
-                                    </div>
-                                    <div class="indicator-details">
-                                        <span class="label">Deluge System</span>
-                                        <span class="value" id="sprinkler-status-text">STANDBY</span>
-                                    </div>
+                            <div class="system-status-item">
+                                <div class="status-icon-wrapper critical" id="sprinkler-status-icon">
+                                    <i data-lucide="droplets" id="sprinkler-icon"></i>
+                                </div>
+                                <div class="status-info">
+                                    <span class="status-label">Water Deluge Suppression</span>
+                                    <span class="status-value" id="sprinkler-status-text">ARMED - STANDBY MODE</span>
                                 </div>
                             </div>
         
-                            <div class="action-buttons-group">
-                                <button id="cmd-ack-btn" class="warning-btn font-space">
-                                    <i data-lucide="bell-off"></i> ACKNOWLEDGE ALARM
+                            <div class="emergency-action-buttons">
+                                <button id="cmd-ack-btn" class="warning-btn">
+                                    <i data-lucide="bell-ring"></i> Acknowledge Active Alarms
                                 </button>
-                                <button id="cmd-reset-btn" class="success-btn font-space">
-                                    <i data-lucide="rotate-ccw"></i> SYSTEM RESET
+                                <button id="cmd-reset-btn" class="success-btn">
+                                    <i data-lucide="refresh-cw"></i> Execute System Reset
                                 </button>
                             </div>
                         </div>
